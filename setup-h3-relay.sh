@@ -3,6 +3,7 @@
 # No persistent volume needed. Re-run from scratch on every new pod.
 # Requires: NVIDIA GPU with 24GB+ VRAM, container disk >= 80GB.
 set -euo pipefail
+trap 'echo; echo "FAILED at line $LINENO. Fix the error above and re-run."; exit 1' ERR
 
 log() { echo; echo "=== $* ==="; }
 
@@ -24,7 +25,9 @@ nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 
 log "Pinning ComfyUI to v0.44.2 (h3-relay needs 0.37.0+)"
 cd "$COMFY"
-git fetch --all --tags --quiet
+# --force: the pod image ships a tag that would otherwise be "rejected",
+# which makes fetch return non-zero and trips set -e.
+git fetch --all --tags --force --quiet || true
 git reset --hard v0.44.2
 pip install -q -r requirements.txt
 
